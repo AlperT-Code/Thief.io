@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Thief.io - Police and Thief Game</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+    
+    body {
+      margin: 0;
+      overflow: hidden;
+      background-color: #111;
+      font-family: 'Orbitron', sans-serif;
+      color: white;
+    }
+    
+    canvas {
+      display: block;
+      background-color: #111;
+    }
+    
+    /* Oyun Bitti Ekranı */
+    #game-over-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+      display: none;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+    
+    #game-over-screen.visible {
+      opacity: 1;
+    }
+    
+    #game-over-content {
+      text-align: center;
+      background: rgba(30, 30, 30, 0.9);
+      padding: 30px 40px;
+      border-radius: 15px;
+      border: 2px solid #ff3333;
+      box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+      transform: scale(0.8);
+      animation: zoomIn 0.5s forwards;
+    }
+    
+    @keyframes zoomIn {
+      to { transform: scale(1); }
+    }
+    
+    #game-over-screen h1 {
+      font-size: 3em;
+      margin-bottom: 20px;
+      color: #ff3333;
+      text-shadow: 0 0 10px rgba(255, 0, 0, 0.7);
+      font-family: 'Press Start 2P', cursive;
+    }
+    
+    #final-time, #high-score {
+      font-size: 1.5em;
+      margin-bottom: 15px;
+      color: #ffcc00;
+    }
+    
+    .game-btn {
+      padding: 12px 25px;
+      font-size: 1.2em;
+      cursor: pointer;
+      background: linear-gradient(to bottom, #555, #333);
+      border: 2px solid #777;
+      color: white;
+      border-radius: 8px;
+      margin: 10px;
+      font-family: 'Orbitron', sans-serif;
+      transition: all 0.3s;
+    }
+    
+    .game-btn:hover {
+      background: linear-gradient(to bottom, #666, #444);
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    }
+    
+    /* Başlangıç Ekranı */
+    #start-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.9)), url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect fill="%23222" width="100" height="100"/><path fill="%23333" d="M0 0h50v50H0z"/></svg>');
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 10;
+      transition: opacity 0.8s ease;
+    }
+    
+    .game-title {
+      font-size: 5em;
+      margin-bottom: 30px;
+      color: #ffcc00;
+      text-shadow: 0 0 15px rgba(255, 204, 0, 0.7);
+      font-family: 'Press Start 2P', cursive;
+      letter-spacing: 2px;
+      animation: glow 2s infinite alternate;
+    }
+    
+    @keyframes glow {
+      from { text-shadow: 0 0 10px rgba(255, 204, 0, 0.7); }
+      to { text-shadow: 0 0 20px rgba(255, 204, 0, 0.9), 0 0 30px rgba(255, 204, 0, 0.6); }
+    }
+    
+    #start-btn {
+      padding: 15px 40px;
+      font-size: 1.5em;
+      background: linear-gradient(to bottom, #ff7733, #cc5522);
+      border: none;
+      color: white;
+      border-radius: 10px;
+      margin-top: 40px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-family: 'Orbitron', sans-serif;
+      box-shadow: 0 5px 15px rgba(204, 85, 34, 0.4);
+    }
+    
+    #start-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 7px 20px rgba(204, 85, 34, 0.6);
+    }
+    
+    /* Bilgi Butonu */
+    #info-btn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: linear-gradient(to bottom, #555, #333);
+      border: 2px solid #777;
+      color: white;
+      font-size: 1.5em;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: all 0.3s;
+      z-index: 20;
+    }
+    
+    #info-btn:hover {
+      transform: rotate(360deg);
+      background: linear-gradient(to bottom, #666, #444);
+      box-shadow: 0 0 15px rgba(255, 204, 0, 0.5);
+    }
+    
+    /* Bilgi Kutusu */
+    .info-container {
+      position: fixed;
+      top: 80px;
+      right: 20px;
+      background: rgba(40, 40, 40, 0.95);
+      border: 2px solid #555;
+      border-radius: 10px;
+      padding: 15px;
+      width: 300px;
+      z-index: 100;
+      display: none;
+      box-shadow: 0 5px 25px rgba(0, 0, 0, 0.5);
+      transform: translateX(100px);
+      opacity: 0;
+      transition: all 0.4s ease;
+    }
+    
+    .info-container.active {
+      display: block;
+      transform: translateX(0);
+      opacity: 1;
+    }
+    
+    .info-box {
+      padding: 12px;
+      margin-bottom: 10px;
+      background: rgba(60, 60, 60, 0.8);
+      border-radius: 8px;
+      cursor: pointer;
+      border-left: 4px solid #ffcc00;
+      transition: all 0.3s;
+      font-weight: bold;
+    }
+    
+    .info-box:hover {
+      background: rgba(80, 80, 80, 0.9);
+      transform: translateX(-5px);
+      box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
+    }
+    
+    .info-content {
+      display: none;
+      padding: 10px;
+      margin-top: 5px;
+      background: rgba(50, 50, 50, 0.8);
+      border-radius: 5px;
+      font-size: 0.9em;
+      color: #ccc;
+      border-left: 3px solid #ff9933;
+      animation: fadeIn 0.3s ease;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    /* HUD (Heads Up Display) */
+    #hud {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      background: rgba(30, 30, 30, 0.7);
+      padding: 10px 15px;
+      border-radius: 10px;
+      border: 1px solid #444;
+      font-size: 1.1em;
+      color: #ffcc00;
+      display: none;
+    }
+    
+    /* Yükleme Ekranı */
+    #loading-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #111;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    
+    .loader {
+      width: 80px;
+      height: 80px;
+      border: 8px solid #333;
+      border-top: 8px solid #ffcc00;
+      border-radius: 50%;
+      animation: spin 1.5s linear infinite;
+      margin-bottom: 20px;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    #loading-text {
+      font-size: 1.2em;
+      color: #ffcc00;
+    }
+    
+    /* Kontrol Talimatları */
+    #controls {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      background: rgba(30, 30, 30, 0.7);
+      padding: 15px;
+      border-radius: 10px;
+      border: 1px solid #444;
+      font-size: 0.9em;
+      color: #aaa;
+      display: none;
+    }
+    
+    /* Duyuru Animasyonu */
+    #announcement {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.8);
+      padding: 20px 40px;
+      border-radius: 10px;
+      border: 2px solid #ffcc00;
+      font-size: 2em;
+      color: #ffcc00;
+      text-align: center;
+      z-index: 200;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s ease;
+      text-shadow: 0 0 10px rgba(255, 204, 0, 0.7);
+    }
+    
+    /* En Yüksek Skor */
+    #high-score-display {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: rgba(30, 30, 30, 0.7);
+      padding: 10px 15px;
+      border-radius: 10px;
+      border: 1px solid #444;
+      font-size: 1.1em;
+      color: #ffcc00;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <!-- Yükleme Ekranı -->
+  <div id="loading-screen">
+    <div class="loader"></div>
+    <div id="loading-text">LOADING...</div>
+  </div>
+
+  <canvas id="gameCanvas"></canvas>
+
+  <!-- HUD -->
+  <div id="hud">
+    <div id="timer">TIME: 00:00</div>
+  </div>
+
+  <!-- High Score Display -->
+  <div id="high-score-display">
+    <div id="high-score-text">HIGH SCORE: 00:00</div>
+  </div>
+
+  <!-- Control Instructions -->
+  <div id="controls">
+    Move with W, A, S, D keys. Avoid the police! Press ESC to pause.
+  </div>
+
+  <!-- Game Over Screen -->
+  <div id="game-over-screen">
+    <div id="game-over-content">
+      <h1>GAME OVER</h1>
+      <p id="final-time"></p>
+      <p id="high-score"></p>
+      <button id="retry-btn" class="game-btn">Play Again</button>
+      <button id="menu-btn" class="game-btn">Back To Menu</button>
+    </div>
+  </div>
+
+  <!-- Start Screen -->
+  <div id="start-screen">
+    <h1 class="game-title">THIEF.IO</h1>
+    <button id="start-btn">PLAY</button>
+    <button id="info-btn">i</button>
+  </div>
+
+  <!-- Info Box -->
+  <div class="info-container" id="info-container">
+    <div class="info-box" id="privacy-box">
+      Privacy Policy
+    </div>
+    <div class="info-content" id="privacy-content">
+      We respect your privacy. This game does not collect or share any personal data.
+    </div>
+
+    <div class="info-box" id="terms-box">
+      Terms of Use
+    </div>
+    <div class="info-content" id="terms-content">
+      The game is for entertainment purposes only. Please play for reasonable durations.
+    </div>
+
+    <div class="info-box" id="contact-box">
+      Contact
+    </div>
+    <div class="info-content" id="contact-content">
+      For feedback and suggestions: info@thiefio.com
+    </div>
+
+    <div class="info-box" id="how-to-play-box">
+      How to Play
+    </div>
+    <div class="info-content" id="how-to-play-content">
+      Move your character with W, A, S, D keys. Avoid the blue police officers. The longer you survive, the better! Press ESC to pause the game.
+    </div>
+  </div>
+
+  <!-- Duyuru -->
+  <div id="announcement"></div>
+
+  <script>
+    // DOM elementleri
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    const loadingScreen = document.getElementById("loading-screen");
+    const startScreen = document.getElementById("start-screen");
+    const gameOverScreen = document.getElementById("game-over-screen");
+    const hud = document.getElementById("hud");
+    const highScoreDisplay = document.getElementById("high-score-display");
+    const highScoreText = document.getElementById("high-score-text");
+    const controls = document.getElementById("controls");
+    const timerElement = document.getElementById("timer");
+    const finalTimeElement = document.getElementById("final-time");
+    const highScoreElement = document.getElementById("high-score");
+    const announcement = document.getElementById("announcement");
+    
+    // Canvas boyutunu ayarla
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+    
+    // Oyun değişkenleri
+    let gameActive = false;
+    let gameTime = 0;
+    let highScore = localStorage.getItem('thiefio_highscore') || 0;
+    let timerInterval;
+    let assetsLoaded = 0;
+    let totalAssets = 5; // Yükleyeceğimiz asset sayısı
+    
+    // Yüksek skoru güncelle
+    function updateHighScoreDisplay() {
+      highScoreText.textContent = `HIGH SCORE: ${formatTime(highScore)}`;
+    }
+    
+    // Asset yükleme
+    function loadAssets() {
+      // Daha sinirli görünümlü hırsız
+      const playerImage = new Image();
+      playerImage.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30"><circle cx="15" cy="15" r="15" fill="%2300cc66"/><circle cx="10" cy="10" r="2" fill="white"/><circle cx="20" cy="10" r="2" fill="white"/><path d="M8 19 Q15 24 22 19" stroke="white" stroke-width="1.5" fill="transparent"/><path d="M12 12 L14 14" stroke="white" stroke-width="1.5"/><path d="M18 12 L16 14" stroke="white" stroke-width="1.5"/><rect x="7" y="17" width="16" height="2" fill="%23cc0000" rx="1"/></svg>';
+      playerImage.onload = assetLoaded;
+      
+      // Daha sinirli görünümlü polis
+      const policeImage = new Image();
+      policeImage.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="%233366ff"/><rect x="10" y="25" width="20" height="10" fill="%23113399"/><circle cx="13" cy="13" r="3" fill="white"/><circle cx="27" cy="13" r="3" fill="white"/><path d="M10 18 Q20 25 30 18" stroke="white" stroke-width="1.5" fill="transparent"/><path d="M15 13 L17 15" stroke="white" stroke-width="1.5"/><path d="M25 13 L23 15" stroke="white" stroke-width="1.5"/><rect x="15" y="28" width="10" height="4" fill="%23cc0000" rx="1"/></svg>';
+      policeImage.onload = assetLoaded;
+      
+      const bulletImage = new Image();
+      bulletImage.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 10 10"><circle cx="5" cy="5" r="5" fill="%23ff3333"/></svg>';
+      bulletImage.onload = assetLoaded;
+      
+      const backgroundPattern = new Image();
+      backgroundPattern.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect fill="%23111" width="100" height="100"/><path fill="%23151515" d="M0 0h50v50H0z"/></svg>';
+      backgroundPattern.onload = assetLoaded;
+      
+      const titleImage = new Image();
+      titleImage.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="100" viewBox="0 0 400 100"><text x="200" y="60" font-family="\'Press Start 2P\', cursive" font-size="40" fill="%23ffcc00" text-anchor="middle" style="text-shadow: 0 0 10px rgba(255, 204, 0, 0.7);">THIEF.IO</text></svg>';
+      titleImage.onload = assetLoaded;
+    }
+    
+    function assetLoaded() {
+      assetsLoaded++;
+      const progress = Math.floor((assetsLoaded / totalAssets) * 100);
+      document.getElementById('loading-text').textContent = `LOADING... ${progress}%`;
+      
+      if (assetsLoaded === totalAssets) {
+        setTimeout(() => {
+          loadingScreen.style.display = 'none';
+          startScreen.style.display = 'flex';
+          updateHighScoreDisplay();
+        }, 500);
+      }
+    }
+    
+    // Oyun nesneleri
+    const player = {
+      x: canvas.width / 2,
+      y: canvas.height / 2,
+      radius: 15,
+      color: '#00cc66',
+      speed: 5,
+      dx: 0,
+      dy: 0,
+      image: null
+    };
+    
+    const policeBullets = [];
+    const polices = [];
+    
+    // Yardımcı fonksiyonlar
+    function formatTime(seconds) {
+      const minutes = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+    
+    function showAnnouncement(text, duration = 2000) {
+      announcement.textContent = text;
+      announcement.style.opacity = "1";
+      
+      setTimeout(() => {
+        announcement.style.opacity = "0";
+      }, duration);
+    }
+    
+    // Zamanlayıcı işlevleri
+    function startTimer() {
+      gameTime = 0;
+      timerElement.textContent = `TIME: ${formatTime(gameTime)}`;
+      timerInterval = setInterval(() => {
+        gameTime++;
+        timerElement.textContent = `TIME: ${formatTime(gameTime)}`;
+        
+        // Belirli zamanlarda duyurular
+        if (gameTime === 10) showAnnouncement("10 seconds! You're doing great!");
+        if (gameTime === 30) showAnnouncement("30 seconds! Amazing!");
+        if (gameTime === 60) showAnnouncement("1 minute! Legendary!");
+      }, 1000);
+    }
+    
+    function stopTimer() {
+      clearInterval(timerInterval);
+      finalTimeElement.textContent = `Your Time: ${formatTime(gameTime)}`;
+      
+      // Yüksek skoru kontrol et ve güncelle
+      if (gameTime > highScore) {
+        highScore = gameTime;
+        localStorage.setItem('thiefio_highscore', highScore);
+        highScoreElement.textContent = `NEW HIGH SCORE: ${formatTime(highScore)}`;
+        highScoreElement.style.color = '#ff9900';
+        highScoreElement.style.textShadow = '0 0 10px rgba(255, 153, 0, 0.7)';
+        updateHighScoreDisplay();
+      } else {
+        highScoreElement.textContent = `High Score: ${formatTime(highScore)}`;
+        highScoreElement.style.color = '#ffcc00';
+        highScoreElement.style.textShadow = 'none';
+      }
+    }
+    
+    // Polis oluşturma
+    function spawnPolice() {
+      if (!gameActive) return;
+      
+      const side = Math.floor(Math.random() * 4); // 0: üst, 1: sağ, 2: alt, 3: sol
+      let x, y;
+      
+      switch(side) {
+        case 0: // üst
+          x = Math.random() * canvas.width;
+          y = -30;
+          break;
+        case 1: // sağ
+          x = canvas.width + 30;
+          y = Math.random() * canvas.height;
+          break;
+        case 2: // alt
+          x = Math.random() * canvas.width;
+          y = canvas.height + 30;
+          break;
+        case 3: // sol
+          x = -30;
+          y = Math.random() * canvas.height;
+          break;
+      }
+      
+      const police = {
+        x,
+        y,
+        radius: 20,
+        color: '#3366ff',
+        speed: 1.5 + Math.random() * 1.5,
+        dx: 0,
+        dy: 0,
+        image: null
+      };
+      
+      polices.push(police);
+      
+      // Sonraki polisi planla (zamanla zorluk artışı)
+      const nextSpawn = Math.max(1000, 5000 - Math.min(4000, gameTime * 40));
+      setTimeout(spawnPolice, nextSpawn);
+    }
+    
+    // Oyun güncelleme
+    function update() {
+      if (!gameActive) return;
+      
+      // Oyuncu hareketi
+      player.x += player.dx;
+      player.y += player.dy;
+      
+      // Sınır kontrolü
+      if (player.x < player.radius) player.x = player.radius;
+      if (player.x > canvas.width - player.radius) player.x = canvas.width - player.radius;
+      if (player.y < player.radius) player.y = player.radius;
+      if (player.y > canvas.height - player.radius) player.y = canvas.height - player.radius;
+      
+      // Polis hareketi
+      polices.forEach(police => {
+        const angle = Math.atan2(player.y - police.y, player.x - police.x);
+        police.dx = Math.cos(angle) * police.speed;
+        police.dy = Math.sin(angle) * police.speed;
+        
+        police.x += police.dx;
+        police.y += police.dy;
+        
+        // Mermi atışı
+        if (Math.random() < 0.01) {
+          const bulletAngle = Math.atan2(player.y - police.y, player.x - police.x);
+          policeBullets.push({
+            x: police.x,
+            y: police.y,
+            dx: Math.cos(bulletAngle) * 6,
+            dy: Math.sin(bulletAngle) * 6,
+            radius: 5,
+            color: '#ff3333',
+            image: null
+          });
+        }
+      });
+      
+      // Mermi hareketi
+      for (let i = policeBullets.length - 1; i >= 0; i--) {
+        const bullet = policeBullets[i];
+        bullet.x += bullet.dx;
+        bullet.y += bullet.dy;
+        
+        // Çarpışma kontrolü
+        const dist = Math.hypot(bullet.x - player.x, bullet.y - player.y);
+        if (dist < player.radius + bullet.radius) {
+          gameOver();
+          policeBullets.splice(i, 1);
+          continue;
+        }
+        
+        // Ekran dışı kontrolü
+        if (bullet.x < -20 || bullet.x > canvas.width + 20 || 
+            bullet.y < -20 || bullet.y > canvas.height + 20) {
+          policeBullets.splice(i, 1);
+        }
+      }
+      
+      // Polis çarpışma kontrolü
+      for (let i = polices.length - 1; i >= 0; i--) {
+        const police = polices[i];
+        const dist = Math.hypot(police.x - player.x, police.y - player.y);
+        
+        if (dist < player.radius + police.radius) {
+          gameOver();
+          break;
+        }
+      }
+      
+      draw();
+      requestAnimationFrame(update);
+    }
+    
+    // Çizim fonksiyonu
+    function draw() {
+      // Arkaplan
+      ctx.fillStyle = '#111';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // Izgara çizgileri
+      ctx.strokeStyle = '#222';
+      ctx.lineWidth = 1;
+      
+      for (let x = 0; x < canvas.width; x += 50) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
+        ctx.stroke();
+      }
+      
+      for (let y = 0; y < canvas.height; y += 50) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+        ctx.stroke();
+      }
+      
+      // Mermiler
+      policeBullets.forEach(bullet => {
+        ctx.beginPath();
+        ctx.arc(bullet.x, bullet.y, bullet.radius, 0, Math.PI * 2);
+        ctx.fillStyle = bullet.color;
+        ctx.fill();
+        
+        // Mermi efekti
+        ctx.beginPath();
+        ctx.arc(bullet.x - bullet.dx, bullet.y - bullet.dy, bullet.radius * 0.7, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255, 100, 100, 0.6)';
+        ctx.fill();
+      });
+      
+      // Polisler
+      polices.forEach(police => {
+        ctx.beginPath();
+        ctx.arc(police.x, police.y, police.radius, 0, Math.PI * 2);
+        ctx.fillStyle = police.color;
+        ctx.fill();
+        
+        // Polis gözleri (sinirli ifade)
+        const angle = Math.atan2(player.y - police.y, player.x - police.x);
+        const eyeX1 = police.x + Math.cos(angle) * 8 + Math.cos(angle - Math.PI/2) * 5;
+        const eyeY1 = police.y + Math.sin(angle) * 8 + Math.sin(angle - Math.PI/2) * 5;
+        const eyeX2 = police.x + Math.cos(angle) * 8 + Math.cos(angle + Math.PI/2) * 5;
+        const eyeY2 = police.y + Math.sin(angle) * 8 + Math.sin(angle + Math.PI/2) * 5;
+        
+        // Gözler
+        ctx.beginPath();
+        ctx.arc(eyeX1, eyeY1, 4, 0, Math.PI * 2);
+        ctx.arc(eyeX2, eyeY2, 4, 0, Math.PI * 2);
+        ctx.fillStyle = 'white';
+        ctx.fill();
+        
+        // Gözbebekleri
+        ctx.beginPath();
+        ctx.arc(eyeX1 + Math.cos(angle) * 2, eyeY1 + Math.sin(angle) * 2, 2, 0, Math.PI * 2);
+        ctx.arc(eyeX2 + Math.cos(angle) * 2, eyeY2 + Math.sin(angle) * 2, 2, 0, Math.PI * 2);
+        ctx.fillStyle = 'black';
+        ctx.fill();
+        
+       
+      });
+      
+      // Oyuncu
+      ctx.beginPath();
+      ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
+      ctx.fillStyle = player.color;
+      ctx.fill();
+      
+      // Oyuncu gözleri (yaralı/sinirli ifade)
+      const lookAngle = Math.atan2(player.dy, player.dx);
+      const playerEyeX1 = player.x + Math.cos(lookAngle) * 6 + Math.cos(lookAngle - Math.PI/2) * 4;
+      const playerEyeY1 = player.y + Math.sin(lookAngle) * 6 + Math.sin(lookAngle - Math.PI/2) * 4;
+      const playerEyeX2 = player.x + Math.cos(lookAngle) * 6 + Math.cos(lookAngle + Math.PI/2) * 4;
+      const playerEyeY2 = player.y + Math.sin(lookAngle) * 6 + Math.sin(lookAngle + Math.PI/2) * 4;
+      
+      // Gözler
+      ctx.beginPath();
+      ctx.arc(playerEyeX1, playerEyeY1, 3, 0, Math.PI * 2);
+      ctx.arc(playerEyeX2, playerEyeY2, 3, 0, Math.PI * 2);
+      ctx.fillStyle = 'white';
+      ctx.fill();
+      
+      // Gözbebekleri
+      ctx.beginPath();
+      ctx.arc(playerEyeX1 + Math.cos(lookAngle) * 1.5, playerEyeY1 + Math.sin(lookAngle) * 1.5, 1.5, 0, Math.PI * 2);
+      ctx.arc(playerEyeX2 + Math.cos(lookAngle) * 1.5, playerEyeY2 + Math.sin(lookAngle) * 1.5, 1.5, 0, Math.PI * 2);
+      ctx.fillStyle = 'black';
+      ctx.fill();
+      
+      // Yaralı göz efekti
+      ctx.beginPath();
+      ctx.moveTo(playerEyeX1 - 2, playerEyeY1 + 2);
+      ctx.lineTo(playerEyeX1 + 2, playerEyeY1 - 2);
+      ctx.strokeStyle = '#ff0000';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      
+      // Oyuncu iz efekti
+      ctx.beginPath();
+      ctx.arc(player.x - player.dx * 2, player.y - player.dy * 2, player.radius * 0.7, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(0, 204, 102, 0.5)';
+      ctx.fill();
+    }
+    
+    // Oyunu duraklat
+    function pauseGame() {
+      if (!gameActive) return;
+      
+      gameActive = false;
+      clearInterval(timerInterval);
+      
+      showAnnouncement("PAUSED - Press ESC to resume");
+    }
+    
+    // Oyunu devam ettir
+    function resumeGame() {
+      if (gameActive) return;
+      
+      gameActive = true;
+      startTimer();
+      update();
+      announcement.style.opacity = "0";
+    }
+    
+    // Oyun bitti
+    function gameOver() {
+      gameActive = false;
+      stopTimer();
+      
+      // Efekt için birkaç kare daha çiz
+      for (let i = 0; i < 5; i++) {
+        draw();
+      }
+      
+      setTimeout(() => {
+        gameOverScreen.style.display = 'flex';
+        setTimeout(() => {
+          gameOverScreen.classList.add('visible');
+        }, 50);
+      }, 500);
+    }
+    
+    // Oyunu sıfırla
+    function resetGame() {
+      player.x = canvas.width / 2;
+      player.y = canvas.height / 2;
+      player.dx = 0;
+      player.dy = 0;
+      
+      policeBullets.length = 0;
+      polices.length = 0;
+      
+      gameOverScreen.classList.remove('visible');
+      setTimeout(() => {
+        gameOverScreen.style.display = 'none';
+        gameActive = true;
+        startTimer();
+        spawnPolice();
+        update();
+      }, 500);
+    }
+    
+    // Menüye dön
+    function returnToMenu() {
+      gameActive = false;
+      clearInterval(timerInterval);
+      
+      gameOverScreen.classList.remove('visible');
+      startScreen.style.opacity = '0';
+      setTimeout(() => {
+        gameOverScreen.style.display = 'none';
+        hud.style.display = 'none';
+        highScoreDisplay.style.display = 'none';
+        controls.style.display = 'none';
+        startScreen.style.display = 'flex';
+        setTimeout(() => {
+          startScreen.style.opacity = '1';
+        }, 50);
+      }, 500);
+    }
+    
+    // Olay dinleyicileri
+    document.getElementById('start-btn').addEventListener('click', () => {
+      startScreen.style.opacity = '0';
+      setTimeout(() => {
+        startScreen.style.display = 'none';
+        hud.style.display = 'block';
+        highScoreDisplay.style.display = 'block';
+        controls.style.display = 'block';
+        gameActive = true;
+        startTimer();
+        spawnPolice();
+        update();
+        showAnnouncement("Avoid The Police!", 2000);
+      }, 800);
+    });
+    
+    document.getElementById('retry-btn').addEventListener('click', resetGame);
+    
+    document.getElementById('menu-btn').addEventListener('click', returnToMenu);
+    
+    // Bilgi kutusu işlevselliği
+    const infoBtn = document.getElementById('info-btn');
+    const infoContainer = document.getElementById('info-container');
+    
+    infoBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      infoContainer.classList.toggle('active');
+    });
+    
+    document.addEventListener('click', (e) => {
+      if (!infoContainer.contains(e.target) && e.target !== infoBtn) {
+        infoContainer.classList.remove('active');
+        
+        // Tüm içerikleri kapat
+        document.querySelectorAll('.info-content').forEach(content => {
+          content.style.display = 'none';
+        });
+      }
+    });
+    
+    const infoBoxes = document.querySelectorAll('.info-box');
+    
+    infoBoxes.forEach(box => {
+      box.addEventListener('click', () => {
+        const content = box.nextElementSibling;
+        const isVisible = content.style.display === 'block';
+        
+        // Tüm içerikleri kapat
+        document.querySelectorAll('.info-content').forEach(item => {
+          item.style.display = 'none';
+        });
+        
+        // Tıklananı aç/kapat
+        content.style.display = isVisible ? 'none' : 'block';
+      });
+    });
+    
+    // Klavye kontrolleri
+    const keys = {};
+    
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        if (gameActive) {
+          pauseGame();
+        } else if (document.getElementById('game-over-screen').style.display === 'flex') {
+          // Oyun bitti ekranındayken ESC'ye basılırsa menüye dön
+          returnToMenu();
+        } else {
+          // Oyun duraklatılmışsa devam ettir
+          resumeGame();
+        }
+        return;
+      }
+      
+      keys[e.key] = true;
+      
+      if (keys['w'] || keys['W'] || keys['ArrowUp']) player.dy = -player.speed;
+      if (keys['s'] || keys['S'] || keys['ArrowDown']) player.dy = player.speed;
+      if (keys['a'] || keys['A'] || keys['ArrowLeft']) player.dx = -player.speed;
+      if (keys['d'] || keys['D'] || keys['ArrowRight']) player.dx = player.speed;
+    });
+    
+    document.addEventListener('keyup', (e) => {
+      keys[e.key] = false;
+      
+      if ((e.key === 'w' || e.key === 'W' || e.key === 'ArrowUp') && !keys['s'] && !keys['S'] && !keys['ArrowDown']) player.dy = 0;
+      if ((e.key === 's' || e.key === 'S' || e.key === 'ArrowDown') && !keys['w'] && !keys['W'] && !keys['ArrowUp']) player.dy = 0;
+      if ((e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') && !keys['d'] && !keys['D'] && !keys['ArrowRight']) player.dx = 0;
+      if ((e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight') && !keys['a'] && !keys['A'] && !keys['ArrowLeft']) player.dx = 0;
+    });
+    
+    // Asset yüklemeyi başlat
+    loadAssets();
+  </script>
+</body>
+</html>
